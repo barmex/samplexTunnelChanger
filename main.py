@@ -41,9 +41,10 @@ def change_tunnel_interface():
     data = request.get_json(force=True)
     routerInterfaceIndex = data.get('interfaceIndex')
     ipAddress = data.get('ipAddress')
+    routerId = data.get('routerId')
     if routerInterfaceIndex and ipAddress:
         response = set_tunnel_interface_destination_ip_address(routerHost, routerPort, routerUsername, routerPassword,
-                                                               routerInterfaceIndex, ipAddress=ipAddress)
+                                                               routerInterfaceIndex, ipAddress=ipAddress, routerId=routerId)
         return response.text, response.status_code
     else:
         return 'Wrong parameters interfaceIndex or ipAddress.', 500
@@ -66,7 +67,7 @@ def get_current_interface_state(routerHost: str, routerPort: int, routerUsername
 
 def set_tunnel_interface_destination_ip_address(routerHost: str, routerPort: int, routerUsername: str,
                                                 routerPassword: str,
-                                                routerInterfaceIndex: str, ipAddress: str) -> str:
+                                                routerInterfaceIndex: str, ipAddress: str, routerId: str) -> str:
     url = (f'https://{routerHost}:{routerPort}/restconf/data/Cisco-IOS-XE-native:native/interface/'
            f'Tunnel={routerInterfaceIndex}/Cisco-IOS-XE-tunnel:tunnel/destination/ipaddress-or-host/')
     headers = {
@@ -80,7 +81,7 @@ def set_tunnel_interface_destination_ip_address(routerHost: str, routerPort: int
     response = requests.patch(url=url, headers=headers, auth=auth, verify=False, json=data)
     if response.status_code == 204:
         logging.debug(f'The interface Tunnel{routerInterfaceIndex} has been updated successfully.')
-        send_notification(tgBotToken, tgChatID, text=f'The IP address for interface Tunnel{routerInterfaceIndex} has '
+        send_notification(tgBotToken, tgChatID, text=f'The IP address on router {routerId} for interface Tunnel{routerInterfaceIndex} has '
                                                      f'been updated successfully to {ipAddress}.')
         get_current_interface_state(routerHost, routerPort, routerUsername, routerPassword, routerInterfaceIndex)
     return response
